@@ -30,7 +30,17 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Phục vụ giao diện tĩnh Frontend (index.html, style.css, app.js)
-app.use(express.static(path.join(__dirname)));
+app.use('/assets', express.static(path.join(__dirname, 'assets')));
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+for (const file of ['index.html', 'style.css', 'app.js', 'login-banner.jpg']) {
+  app.get(`/${file}`, (req, res) => {
+    res.sendFile(path.join(__dirname, file));
+  });
+}
 
 // Gắn kết các API Routes RESTful
 app.use('/api/auth', authRoutes);
