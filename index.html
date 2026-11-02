@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>2CE COFFEE - Hệ Thống Quản Lý & Xếp Lịch Ca Làm Việc</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- File định dạng giao diện Warm Coffee & Clean Surfaces -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- ================================================================= -->
+  <!-- 1. GIAO DIỆN ĐĂNG NHẬP (VIEW: LOGIN) CHUẨN 2CE COFFEE & HRM -->
+  <!-- ================================================================= -->
+  <section id="login-screen" class="login-wrapper">
+    <div class="login-split-container">
+
+      <!-- PHẦN BÊN TRÁI: HÌNH ẢNH BANNER 2CE VÀ TRÍCH DẪN (TỪ HÌNH SỐ 2) -->
+      <div class="login-banner-side">
+        <div class="login-banner-image-wrapper">
+          <img src="assets/login-banner.jpg" alt="2CE Milk Tea & Tea" class="login-banner-img">
+        </div>
+        <div class="login-banner-quote-card">
+          <h3 class="banner-quote-title">2CE Milk Tea & Tea</h3>
+          <p class="banner-quote-text">"tasting goodness in every sip"</p>
+        </div>
+      </div>
+
+      <!-- PHẦN BÊN PHẢI: FORM ĐĂNG NHẬP HỆ THỐNG -->
+      <div class="login-form-side">
+        <div class="login-card-content">
+
+          <div class="login-brand">
+            <div class="login-logo">2CE<span>2CEmilkteadanang</span></div>
+            <h1 class="login-title">Một tuần mới,<br>cùng nhau bắt đầu.</h1>
+            <p class="login-sub">Hệ thống xếp lịch và đăng ký ca làm</p>
+          </div>
+
+          <form id="login-form" onsubmit="handleLogin(event)">
+
+            <div role="alert" id="login-error-msg" class="alert-note warn" style="display: none; margin-bottom: 16px;"></div>
+
+            <div class="form-group">
+              <label class="form-label" for="username">Tài khoản:</label>
+              <input type="text" id="username" class="form-control"
+                placeholder="Nhập Email hoặc Mã NV (VD: tranthimyco28@gmail.com, toananhluong92@gmail.com, QL, NV01)" required autocomplete="username" autocapitalize="none" spellcheck="false">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="password">Mật khẩu:</label>
+              <input type="password" id="password" class="form-control" placeholder="Nhập mật khẩu 6 số (VD: 839214)"
+                required autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="btn btn-primary"
+              style="width: 100%; padding: 12px; font-size: 14px; margin-top: 6px;">
+              Đăng Nhập
+            </button>
+
+          </form>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- 2. MÀN HÌNH CHÍNH (SIDEBAR + TOPBAR + MAIN CONTENT) -->
+  <!-- ================================================================= -->
+  <div id="main-app" class="app-layout hidden">
+
+    <!-- SIDEBAR BÊN TRÁI (DESKTOP) -->
+    <aside class="sidebar" id="app-sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-title">
+          <div>
+            <h3>2CE</h3>
+            <small>2CEmilkteadanang</small>
+          </div>
+        </div>
+        <span id="user-role-badge" class="badge-role">Nhân viên</span>
+      </div>
+
+      <!-- Thẻ thông tin người dùng -->
+      <div class="user-info-box">
+        <div class="user-info-avatar" id="sidebar-user-avatar">NV</div>
+        <div class="user-info-meta">
+          <strong id="display-username">Nguyễn Văn An</strong>
+          <small id="display-department">Bộ phận: Bếp</small>
+        </div>
+      </div>
+
+      <!-- Menu chuyển đổi các Tab nghiệp vụ -->
+      <nav class="sidebar-menu">
+        <button id="menu-btn-schedule" class="menu-item active" onclick="switchTab('schedule')">
+          <span>Lịch Làm Việc</span>
+        </button>
+        <button id="menu-btn-timesheet" class="menu-item hidden" onclick="switchTab('timesheet')">
+          <span>Theo dõi nhân sự</span>
+        </button>
+        <button id="menu-btn-register" class="menu-item" onclick="switchTab('register')">
+          <span>Đăng Ký Lịch Làm</span>
+        </button>
+        <button id="menu-btn-requests" class="menu-item" onclick="switchTab('requests')">
+          <span>Đăng Ký Nghỉ / Đổi Ca</span>
+        </button>
+      </nav>
+
+      <!-- Chân Sidebar: Đăng xuất -->
+      <div class="sidebar-footer">
+        <button class="btn-logout" onclick="handleLogout()">
+          Đăng Xuất
+        </button>
+      </div>
+    </aside>
+
+    <!-- NỘI DUNG CHÍNH (MAIN CONTENT) -->
+    <main class="main-content">
+
+      <!-- TOPBAR CỐ ĐỊNH -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="topbar-title">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <h2 id="active-tab-title">Lịch làm việc tổng quan</h2>
+              <span id="topbar-user-badge" class="topbar-mobile-badge"></span>
+            </div>
+            <span id="system-phase-badge" class="phase-badge">Đang mở đăng ký ca</span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Điều hướng tuần thực tế -->
+          <div class="week-nav-group">
+            <button onclick="changeWeek(-1)" class="btn-nav-week" title="Tuần trước">◀</button>
+            <button onclick="resetCurrentWeek()" class="btn-nav-week-label" id="current-week-label"
+              title="Về tuần hiện tại">
+              Tuần này
+            </button>
+            <button onclick="changeWeek(1)" class="btn-nav-week" title="Tuần sau">▶</button>
+            <input type="date" id="week-date-picker" onchange="onDatePicked(this.value)" class="date-picker-input"
+              title="Chọn ngày nhảy tuần">
+          </div>
+
+          <!-- Đồng hồ thời gian hệ thống BPMN -->
+          <div class="time-simulator-info">
+            <span class="live-dot"></span>
+            <span id="current-time-display">Thứ 7, 08:00 (Mở đăng ký)</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- ============================================================= -->
+      <!-- TAB 1: LỊCH LÀM VIỆC (SCHEDULE MATRIX & QUẢN LÝ AI) -->
+      <!-- ============================================================= -->
+      <section id="tab-schedule" class="tab-content">
+
+        <!-- Điều khiển chuyển đổi chế độ xem: Lịch Của Tôi & Lịch Toàn Quán -->
+        <div class="view-mode-toggle" id="schedule-view-mode-toggle">
+          <button id="btn-view-personal" class="btn-toggle-view" onclick="setScheduleViewMode('personal')">
+            Lịch Của Tôi
+          </button>
+          <button id="btn-view-matrix" class="btn-toggle-view active" onclick="setScheduleViewMode('matrix')">
+            Lịch Toàn Quán
+          </button>
+        </div>
+
+        <!-- VIEW 1: LỊCH CÁ NHÂN CỦA NHÂN VIÊN -->
+        <div id="personal-schedule-view" class="personal-schedule-container hidden">
+          <!-- Render động từ renderPersonalSchedule() -->
+        </div>
+
+        <!-- VIEW 2: CARD BẢNG LỊCH 2D 21 CA TRONG TUẦN -->
+        <div id="matrix-schedule-view" class="card-box">
+          <div class="schedule-header-controls">
+            <div>
+              <h3>Lịch làm việc toàn quán</h3>
+              <p id="schedule-week-range-text" class="text-sub">Đang tải khoảng ngày tuần...</p>
+            </div>
+            <div class="legend">
+              <span class="legend-item"><span class="dot valid"></span> Đủ nhân sự</span>
+              <span class="legend-item"><span class="dot invalid"></span> Thiếu nhân sự</span>
+              <span class="legend-item dept-bep">● Bếp</span>
+              <span class="legend-item dept-phucvu">● Phục vụ</span>
+              <span class="legend-item dept-phache">● Pha chế</span>
+            </div>
+          </div>
+
+          <div class="mobile-scroll-hint">
+            Vuốt sang phải để xem đủ 7 ngày trên điện thoại
+          </div>
+
+          <!-- Bảng 2D: Khung ca x 7 ngày -->
+          <div class="table-responsive">
+            <table class="schedule-table" id="matrix-schedule-table">
+              <thead>
+                <tr>
+                  <th style="width: 130px;">Ca Làm Việc</th>
+                  <th id="th-day-1">Thứ 2</th>
+                  <th id="th-day-2">Thứ 3</th>
+                  <th id="th-day-3">Thứ 4</th>
+                  <th id="th-day-4">Thứ 5</th>
+                  <th id="th-day-5">Thứ 6</th>
+                  <th id="th-day-6">Thứ 7</th>
+                  <th id="th-day-7">Chủ Nhật</th>
+                </tr>
+              </thead>
+              <tbody id="schedule-table-body">
+                <!-- Render động từ app.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- BẢNG ĐIỀU HÀNH VÀ XẾP CA (DÀNH CHO QUẢN LÝ) -->
+        <div id="manager-control-panel" class="card-box hidden mt-4">
+          <div class="schedule-header-controls">
+            <div>
+              <h3>Bảng điều hành và xếp ca</h3>
+              <p class="text-sub">Tự động phân bổ nhân sự 18 nhân viên vào 21 ca theo các ràng buộc định biên BPMN</p>
+            </div>
+            <span id="manager-status-pill" class="shift-status valid">Sẵn sàng vận hành</span>
+          </div>
+
+          <!-- 4 KPI Thống kê Nhanh -->
+          <div class="kpi-mini-grid">
+            <div class="kpi-mini-card">
+              <span class="kpi-mini-label">Tổng Nhân Sự</span>
+              <strong class="kpi-mini-value" id="kpi-total-staff">18</strong>
+              <small>6 Bếp • 3 PV • 9 PC</small>
+            </div>
+            <div class="kpi-mini-card">
+              <span class="kpi-mini-label">Tiến Độ Đăng Ký Tuần</span>
+              <strong class="kpi-mini-value" id="kpi-reg-progress">18 / 18</strong>
+              <small id="kpi-reg-desc">Đạt chuẩn tối thiểu</small>
+            </div>
+            <div class="kpi-mini-card">
+              <span class="kpi-mini-label">Định Biên 21 Ca</span>
+              <strong class="kpi-mini-value" id="kpi-quota-count">21 / 21</strong>
+              <small id="kpi-quota-desc">Tất cả ca đều đủ người</small>
+            </div>
+            <div class="kpi-mini-card">
+              <span class="kpi-mini-label">Đơn Nghỉ Chờ Duyệt</span>
+              <strong class="kpi-mini-value" id="kpi-pending-req">0</strong>
+              <small>Tự tìm người thay</small>
+            </div>
+          </div>
+
+          <!-- TIẾN ĐỘ ĐĂNG KÝ LỊCH TUẦN CỦA 18 NHÂN VIÊN -->
+          <div id="manager-reg-progress-card" class="reg-progress-card">
+            <div class="reg-progress-header">
+              <div>
+                <h4>Tiến Độ Đăng Ký Lịch Tuần Của 18 Nhân Viên</h4>
+                <p class="text-sub" style="font-size: 12px; margin-top: 2px;">Theo dõi danh sách ai đã nộp lịch và ai chưa nộp lịch trong giai đoạn đăng ký</p>
+              </div>
+              <div class="reg-progress-stats" id="reg-progress-stats-pills">
+                <span class="badge-submitted" id="stat-submitted-badge">Đã gửi lịch: 0 / 18</span>
+                <span class="badge-unsubmitted" id="stat-unsubmitted-badge">Chưa gửi: 18 / 18</span>
+              </div>
+            </div>
+            <div id="reg-progress-list-container">
+              <!-- Render động từ renderRegistrationProgress() -->
+            </div>
+          </div>
+
+          <div class="manager-actions">
+            <div class="ai-threshold-box">
+              <label for="ai-threshold-slider">Ngưỡng độ tin cậy BPMN/AI: <strong id="threshold-val">80</strong>%</label>
+              <input type="range" id="ai-threshold-slider" min="50" max="100" value="80"
+                oninput="updateThreshold(this.value)">
+            </div>
+            <button class="btn-success" onclick="runAIScheduling()">
+              Kiểm Tra & Chạy Xếp Ca Tự Động
+            </button>
+          </div>
+
+          <div id="manager-ai-report" class="ai-report-box mt-3">
+            <p>Hệ thống sẵn sàng. Nhấn nút trên để chạy thuật toán phân bổ nhân sự 21 ca.</p>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ============================================================= -->
+      <!-- TAB 2: ĐĂNG KÝ LỊCH LÀM (REGISTER TABLE - NHÂN VIÊN) -->
+      <!-- ============================================================= -->
+      <section id="tab-register" class="tab-content hidden">
+        <div class="card-box">
+          <div class="reg-header">
+            <div>
+              <h3>Đăng ký ca làm việc</h3>
+              <p class="text-sub">Tích chọn các ca bạn muốn đăng ký trong tuần trực tiếp trên bảng bên dưới</p>
+            </div>
+            <div class="reg-stats">
+              <span>Tổng giờ đã chọn: <strong id="total-hours">0</strong>h / 20h tối thiểu</span>
+              <span>Ca tối đã chọn: <strong id="total-night-shifts">0</strong> / 2 ca tối thiểu</span>
+            </div>
+          </div>
+
+          <!-- Thông báo tiến độ và luật đăng ký -->
+          <div id="reg-rule-alert" class="alert-note warn" style="margin-bottom: 16px;">
+            <strong>Quy định tối thiểu:</strong> Bạn cần đăng ký ít nhất <strong>20 giờ</strong> và ít nhất
+            <strong>2 Ca Tối</strong> trong tuần để nộp đơn hợp lệ.
+          </div>
+
+          <!-- Bảng đăng ký trực tiếp 2D -->
+          <div class="table-responsive">
+            <table class="schedule-table" id="register-table">
+              <thead>
+                <tr>
+                  <th style="width: 140px;">Khung Ca</th>
+                  <th id="reg-th-1">Thứ 2</th>
+                  <th id="reg-th-2">Thứ 3</th>
+                  <th id="reg-th-3">Thứ 4</th>
+                  <th id="reg-th-4">Thứ 5</th>
+                  <th id="reg-th-5">Thứ 6</th>
+                  <th id="reg-th-6">Thứ 7</th>
+                  <th id="reg-th-7">Chủ Nhật</th>
+                </tr>
+              </thead>
+              <tbody id="register-table-body">
+                <!-- Render động các checkbox từ app.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Quyền hạn bộ phận & Nút gửi -->
+          <div class="reg-footer mt-4">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <button id="btn-submit-reg" class="btn-primary" onclick="submitRegistration()" disabled>
+                Gửi Đăng Ký Ca Làm
+              </button>
+              <button id="btn-edit-reg" class="btn-secondary hidden" onclick="toggleEditRegistration()">
+                Thay Đổi Lịch
+              </button>
+              <span id="reg-status-note" class="status-note">
+                <span class="shift-status invalid">Chưa đạt điều kiện</span>
+              </span>
+            </div>
+            <div class="dept-rule-chips">
+              <span><strong>Sáng (4h):</strong> Chỉ Pha chế</span>
+              <span><strong>Chiều (4h):</strong> Pha chế & Bếp</span>
+              <span><strong>Tối (6h):</strong> Cả 3 bộ phận</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================= -->
+      <!-- TAB 3: ĐĂNG KÝ NGHỈ / ĐỔI CA (REQUESTS - NHÂN VIÊN & QUẢN LÝ) -->
+      <!-- ============================================================= -->
+      <section id="tab-requests" class="tab-content hidden">
+        <div class="card-box">
+          <div class="schedule-header-controls">
+            <div>
+              <h3>Quản Lý Đơn Xin Nghỉ & Đổi Ca Đột Xuất</h3>
+            </div>
+          </div>
+
+          <!-- FORM TẠO ĐƠN XIN NGHỈ (HIỂN THỊ CHO NHÂN VIÊN) -->
+          <div id="employee-request-form" class="sub-card mt-3">
+            <h4 style="font-size: 14px; font-weight: 700; color: var(--color-main); margin-bottom: 12px;">
+              Tạo đơn xin nghỉ / xin đổi ca mới
+            </h4>
+            <form onsubmit="submitChangeRequest(event)">
+              <div class="form-row" style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
+                <div class="form-group" style="flex: 1; min-width: 240px; margin-bottom: 0;">
+                  <label for="req-shift-select">Chọn ca làm việc muốn nghỉ:</label>
+                  <select id="req-shift-select" class="form-control" required></select>
+                </div>
+                <div class="form-group" style="flex: 2; min-width: 280px; margin-bottom: 0;">
+                  <label for="req-reason">Lý do đột xuất:</label>
+                  <input type="text" id="req-reason" class="form-control"
+                    placeholder="Ví dụ: Bị ốm đột xuất, việc gia đình gấp, trùng lịch thi trường..." required>
+                </div>
+              </div>
+              <button type="submit" class="btn-primary" style="margin-top: 10px;">
+                Gửi Đơn Lên Quản Lý
+              </button>
+            </form>
+          </div>
+
+          <!-- DANH SÁCH ĐƠN XIN NGHỈ / ĐỔI CA -->
+          <div class="mt-4">
+            <h4 style="font-size: 14px; font-weight: 700; color: var(--color-text); margin-bottom: 12px;">
+              Danh sách đơn xin nghỉ chờ xét duyệt
+            </h4>
+            <div class="table-responsive">
+              <table class="schedule-table" id="requests-table">
+                <thead>
+                  <tr>
+                    <th style="width: 80px;">Mã NV</th>
+                    <th style="width: 160px;">Họ Tên</th>
+                    <th style="width: 180px;">Ca Xin Nghỉ / Đổi</th>
+                    <th>Lý Do Đột Xuất</th>
+                    <th style="width: 120px;">Trạng Thái</th>
+                    <th id="th-action-col" style="width: 160px;">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody id="requests-tbody">
+                  <!-- Render động các đơn từ app.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================= -->
+      <!-- TAB 4: THEO DÕI NHÂN SỰ (TIMESHEET THÁNG - DÀNH CHO QUẢN LÝ) -->
+      <!-- ============================================================= -->
+      <section id="tab-timesheet" class="tab-content hidden">
+        <div class="timesheet-controls-card">
+          <div class="timesheet-month-nav">
+            <button class="btn-month-nav" onclick="changeTimesheetMonth(-1)" title="Tháng trước">◀ Tháng Trước</button>
+            <span id="timesheet-month-label" class="month-display-label">Tháng 10 / 2026</span>
+            <button class="btn-month-nav" onclick="changeTimesheetMonth(1)" title="Tháng sau">Tháng Sau ▶</button>
+            <button class="btn-month-nav" onclick="resetTimesheetMonth()" style="font-size: 11.5px;">Về Tháng Này</button>
+          </div>
+          <div class="timesheet-dept-filters">
+            <button class="btn-dept-filter active" id="filter-dept-all" onclick="filterTimesheetDept('all')">Tất Cả (18 NV)</button>
+            <button class="btn-dept-filter" id="filter-dept-bep" onclick="filterTimesheetDept('Bếp')">Bếp (6)</button>
+            <button class="btn-dept-filter" id="filter-dept-phucvu" onclick="filterTimesheetDept('Phục vụ')">Phục Vụ (3)</button>
+            <button class="btn-dept-filter" id="filter-dept-phache" onclick="filterTimesheetDept('Pha chế')">Pha Chế (9)</button>
+          </div>
+        </div>
+
+        <div class="card-box">
+          <div class="schedule-header-controls">
+            <div>
+              <h3>Bảng tổng hợp ca và giờ làm</h3>
+              <p class="text-sub">Bấm vào từng ô số ca để xem chi tiết</p>
+            </div>
+            <div class="legend">
+              <span class="legend-item dept-bep">● Bếp (NV01-NV06)</span>
+              <span class="legend-item dept-phucvu">● Phục vụ (NV07-NV09)</span>
+              <span class="legend-item dept-phache">● Pha chế (NV10-NV18)</span>
+            </div>
+          </div>
+
+          <div class="mobile-scroll-hint">
+            Vuốt sang phải để xem đủ các tuần trong tháng
+          </div>
+
+          <div class="table-responsive">
+            <table class="timesheet-table" id="timesheet-table">
+              <thead id="timesheet-thead">
+                <!-- Render header động các tuần -->
+              </thead>
+              <tbody id="timesheet-tbody">
+                <!-- Render danh sách 18 nhân viên gom theo 3 bộ phận -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- BOTTOM NAVIGATION BAR (HIỂN THỊ TRÊN MOBILE < 900PX) -->
+    <nav class="bottom-nav-bar" id="mobile-bottom-nav">
+      <button id="mob-tab-schedule" class="bottom-tab-item active" onclick="switchTab('schedule')">
+        <span>Lịch Làm</span>
+      </button>
+      <button id="mob-tab-timesheet" class="bottom-tab-item hidden" onclick="switchTab('timesheet')">
+        <span>Nhân sự</span>
+      </button>
+      <button id="mob-tab-register" class="bottom-tab-item" onclick="switchTab('register')">
+        <span>Đăng Ký</span>
+      </button>
+      <button id="mob-tab-requests" class="bottom-tab-item" onclick="switchTab('requests')">
+        <span>Đổi Ca</span>
+      </button>
+      <button class="bottom-tab-item" onclick="handleLogout()">
+        <span>Đăng Xuất</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- POPUP MODAL: CHI TIẾT CA LÀM VIỆC TUẦN TRONG BẢNG TIMESHEET -->
+  <div id="timesheet-detail-modal" class="modal hidden" onclick="onModalBackdropClick(event)">
+    <div class="modal-content" style="max-width: 680px;" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3 id="modal-staff-name">Chi tiết ca làm việc</h3>
+          <small id="modal-staff-meta" style="color: var(--color-sub); font-size: 12px; display: block; margin-top: 2px;"></small>
+        </div>
+        <button class="close-btn" onclick="closeTimesheetDetailModal()" title="Đóng cửa sổ">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="modal-summary-banner" class="alert-note" style="background: var(--coffee-soft); color: var(--primary-color); margin-bottom: 16px; font-size: 13px;">
+          Đang tải thông tin ca...
+        </div>
+        <div class="table-responsive">
+          <table class="schedule-table">
+            <thead>
+              <tr>
+                <th style="width: 120px;">Thứ / Ngày</th>
+                <th style="width: 130px;">Khung Ca</th>
+                <th>Giờ Làm Việc</th>
+                <th style="width: 90px;">Thời Lượng</th>
+                <th style="width: 120px;">Trạng Thái</th>
+              </tr>
+            </thead>
+            <tbody id="modal-shifts-tbody">
+              <!-- Render danh sách ca từ JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeTimesheetDetailModal()">Đóng Cửa Sổ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Container chứa Toast thông báo -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- JavaScript xử lý toàn bộ logic nghiệp vụ BPMN và State Machine -->
+  <script src="app.js"></script>
+</body>
+
+</html>
