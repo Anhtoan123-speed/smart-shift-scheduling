@@ -101,6 +101,7 @@ async function handleLogin(event) {
     enterApp();
     await loadInitialData();
     showToast(`Đăng nhập thành công! Xin chào ${appState.currentUser.name}.`, "success");
+    checkAndShowLoginNotifications();
   } catch (error) {
     errorEl.innerText = error.message;
     errorEl.style.display = "block";
@@ -1523,7 +1524,7 @@ function switchTab(tabId) {
     document.getElementById("tab-requests")?.classList.remove("hidden");
     document.getElementById("menu-btn-requests")?.classList.add("active");
     document.getElementById("mob-tab-requests")?.classList.add("active");
-    if (titleEl) titleEl.innerText = "Quản Lý Đơn Xin Nghỉ & Đổi Ca";
+    if (titleEl) titleEl.innerText = "Quản Lý Đơn Xin Nghỉ";
     renderLeaveRequestOptions();
     renderRequestsTable();
   }
@@ -1662,7 +1663,113 @@ function showToast(message, type = "info") {
 }
 
 // ==============================================================================
-// 14. TỰ ĐỘNG KHỞI CHẠY (APP INITIALIZATION)
+// 14. KIỂM TRA & HIỂN THỊ THÔNG BÁO THAY ĐỔI NGAY SAU KHI ĐĂNG NHẬP
+// ==============================================================================
+function checkAndShowLoginNotifications() {
+  const user = appState.currentUser;
+  if (!user) return;
+
+  const isManager = user.role === 'manager' || user.role === 'admin' || user.dept === 'Quản lý';
+  const lastNotifiedKey = `2ce_notified_events_${user.id}`;
+  let notifiedEvents = [];
+  try {
+    const raw = sessionStorage.getItem(lastNotifiedKey);
+    if (raw) notifiedEvents = JSON.parse(raw);
+  } catch (e) {}
+
+  const newNotifications = [];
+
+  if (isManager) {
+    // 1. DÀNH CHO QUẢN LÝ
+    // Đơn xin nghỉ đang chờ duyệt
+    const pendingRequests = (appState.requests || []).filter(r => r.status === 'PENDING' || r.status === 'Chờ duyệt');
+    if (pendingRequests.length > 0) {
+      const pendingKey = `pending_${pendingRequests.length}_${pendingRequests.map(r => r.id).join('_')}`;
+      if (!notifiedEvents.includes(pendingKey)) {
+        newNotifications.push({
+          message: `Thông báo Quản lý: Hiện có <strong>${pendingRequests.length} đơn xin nghỉ mới</strong> đang chờ bạn xét duyệt!`,
+          type: 'warn',
+          key: pendingKey
+        });
+      }
+    }
+
+    // Ca thiếu nhân sự
+    const missingShifts = (appState.shifts || []).filter(s => !s.is_full);
+    if (missingShifts.length > 0) {
+      const missingKey = `missing_${missingShifts.length}`;
+      if (!notifiedEvents.includes(missingKey)) {
+        newNotifications.push({
+          message: `Hệ thống vận hành: Đang có <strong>${missingShifts.length} ca làm việc</strong> còn thiếu nhân sự cần bổ sung.`,
+          type: 'info',
+          key: missingKey
+        });
+      }
+    }
+  } else {
+    // 2. DÀNH CHO NHÂN VIÊN
+    // A. Kiểm tra các đơn xin nghỉ của chính nhân viên này đã được giải quyết
+    (appState.requests || []).forEach(req => {
+      const isMyRequest = (req.user?.id === user.id || req.user?.email === user.email || req.empId === user.code);
+      if (isMyRequest) {
+        const reqKey = `my_req_${req.id}_${req.status}`;
+        if (!notifiedEvents.includes(reqKey)) {
+          if (req.status === 'APPROVED' || req.status === 'Đã duyệt') {
+            const replText = req.replacement ? ` (Người thế chỗ: <strong>${req.replacement.full_name}</strong>)` : '';
+            newNotifications.push({
+              message: `Đơn xin nghỉ ca <strong>${req.shift?.name || 'làm việc'}</strong> của bạn đã được Quản lý <strong>phê duyệt</strong>!${replText}`,
+              type: 'success',
+              key: reqKey
+            });
+          } else if (req.status === 'REJECTED' || req.status === 'Từ chối') {
+            const noteText = req.note ? ` Ghi chú: <em>"${req.note}"</em>` : '';
+            newNotifications.push({
+              message: `Đơn xin nghỉ ca <strong>${req.shift?.name || 'làm việc'}</strong> của bạn đã bị <strong>từ chối</strong>.${noteText}`,
+              type: 'warn',
+              key: reqKey
+            });
+          }
+        }
+      }
+
+      // B. Kiểm tra xem nhân viên này có được AI điều động thế chỗ ca làm của đồng nghiệp hay không
+      const isReplacementForMe = (
+        (req.replacement_user_id === user.id) ||
+        (req.replacement?.id === user.id || req.replacement?.email === user.email)
+      ) && (req.status === 'APPROVED' || req.status === 'Đã duyệt');
+
+      if (isReplacementForMe) {
+        const replKey = `assigned_replacement_${req.id}`;
+        if (!notifiedEvents.includes(replKey)) {
+          const shiftName = req.shift?.name || 'làm việc';
+          const shiftTime = req.shift?.start_time ? ` (${req.shift.start_time.slice(0, 5)} - ${req.shift.end_time.slice(0, 5)})` : '';
+          const colleagueName = req.user?.full_name || 'đồng nghiệp';
+          newNotifications.push({
+            message: `Lịch điều động mới: Bạn đã được AI phân công thế chỗ ca <strong>${shiftName}${shiftTime}</strong> thay cho <strong>${colleagueName}</strong>!`,
+            type: 'info',
+            key: replKey
+          });
+        }
+      }
+    });
+  }
+
+  // Hiển thị các thông báo (cách nhau 400ms để hiệu ứng xuất hiện xếp tầng đẹp mắt)
+  newNotifications.forEach((notif, index) => {
+    setTimeout(() => {
+      showToast(notif.message, notif.type);
+    }, 600 + index * 400);
+    notifiedEvents.push(notif.key);
+  });
+
+  // Lưu lại các sự kiện đã thông báo vào sessionStorage để không bị lặp lại trong phiên làm việc
+  try {
+    sessionStorage.setItem(lastNotifiedKey, JSON.stringify(notifiedEvents));
+  } catch (e) {}
+}
+
+// ==============================================================================
+// 15. TỰ ĐỘNG KHỞI CHẠY (APP INITIALIZATION)
 // ==============================================================================
 document.addEventListener("DOMContentLoaded", async () => {
   const savedToken = sessionStorage.getItem("2ce_token");
@@ -1687,6 +1794,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           };
           enterApp();
           await loadInitialData();
+          checkAndShowLoginNotifications();
           return;
         }
       }
